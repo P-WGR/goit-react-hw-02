@@ -1,65 +1,63 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
-import Description from "./components/Description/Description";
-import Feedback from "./components/Feedback/Feedback";
-import Options from "./components/Options/Options";
-import Notification from "./components/Notifications/Notifications";
+import Description from "./components/Description";
+import Feedback from "./components/Feedback";
+import Options from "./components/Options";
+import Notification from "./components/Notification";
 
-const App = () => {
-  const [feedback, setFeedback] = useState({
-    good: 0,
-    neutral: 0,
-    bad: 0
+const initialValue = {
+  good: 0,
+  neutral: 0,
+  bad: 0,
+};
+
+function App() {
+  const [rate, setRate] = useState(() => {
+    const savedRates = localStorage.getItem("Feedback rates");
+    if (savedRates !== null) {
+      return JSON.parse(savedRates);
+    } else {
+      return initialValue;
+    }
   });
 
-  useEffect(() => {
-    const savedFeedback = JSON.parse(localStorage.getItem("feedback")) || {
-      good: 0,
-      neutral: 0,
-      bad: 0
-    };
-    setFeedback(savedFeedback);
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("feedback", JSON.stringify(feedback));
-  }, [feedback]);
-
-  const updateFeedback = (feedbackType) => {
-    setFeedback((prevFeedback) => ({
-      ...prevFeedback,
-      [feedbackType]: prevFeedback[feedbackType] + 1
-    }));
+  const updateFeedback = (x) => {
+    setRate({ ...rate, [x]: rate[x] + 1 });
   };
 
-  const resetFeedback = () => {
-    setFeedback({ good: 0, neutral: 0, bad: 0 });
+  const totalFeedback = rate.good + rate.neutral + rate.bad;
+  const percentRate = Math.round(
+    ((rate.good + rate.neutral) / totalFeedback) * 100
+  );
+
+  const resetRate = () => {
+    setRate(initialValue);
+    localStorage.clear();
   };
 
-  const totalFeedback = feedback.good + feedback.neutral + feedback.bad;
-  const positivePercentage = totalFeedback
-    ? Math.round((feedback.good / totalFeedback) * 100)
-    : 0;
+  useEffect(() => {
+    localStorage.setItem("Feedback rates", JSON.stringify(rate));
+  }, [rate]);
+
+  // useEffect(() => {
+  //   const savedRates = localStorage.getItem("Feedback rates");
+  //   if (savedRates !== null) {
+  //     setRate(JSON.parse(savedRates));
+  //   }
+  // }, []);
 
   return (
-    <div className="app-container">
+    <>
       <Description />
-      <Options
-        updateFeedback={updateFeedback}
+      <Options updateFeedback={updateFeedback} resetRate={resetRate} />
+      <Feedback
+        rate={rate}
         totalFeedback={totalFeedback}
-        resetFeedback={resetFeedback}
+        percentRate={percentRate}
       />
-      {totalFeedback > 0 ? (
-        <Feedback
-          feedback={feedback}
-          totalFeedback={totalFeedback}
-          positivePercentage={positivePercentage}
-        />
-      ) : (
-        <Notification message="No feedback given" />
-      )}
-    </div>
+      <Notification rate={rate} />
+    </>
   );
-};
+}
 
 export default App;
